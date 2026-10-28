@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"time"
 
 	"github.com/bcicen/ctop/config"
@@ -9,6 +10,8 @@ import (
 	"github.com/bcicen/ctop/widgets"
 	ui "github.com/gizak/termui"
 )
+
+var gridFrames frameComposer
 
 func ShowConnError(err error) (exit bool) {
 	ui.Clear()
@@ -69,8 +72,6 @@ func RedrawRows(clr bool, overlays ...ui.Bufferer) {
 		buildPanel.Y = y
 		y += buildPanel.Height
 	}
-	// Clear when the build section changes height, including when the last build ends.
-	clr = clr || cGrid.Y != y
 	cGrid.SetY(y)
 
 	for _, c := range cursor.filtered {
@@ -88,7 +89,7 @@ func RedrawRows(clr bool, overlays ...ui.Bufferer) {
 	}
 	parts = append(parts, cGrid)
 	parts = append(parts, overlays...)
-	ui.Render(newRenderFrame(clr, parts...))
+	ui.Render(gridFrames.capture(clr, image.Rect(0, 0, width, height), parts...))
 }
 
 func SingleView() MenuFn {
@@ -127,11 +128,11 @@ func SingleView() MenuFn {
 func RefreshDisplay(overlays ...ui.Bufferer) error {
 	// skip display refresh during scroll
 	if !cursor.isScrolling {
-		needsClear, err := cursor.RefreshContainers()
+		_, err := cursor.RefreshContainers()
 		if err != nil {
 			return err
 		}
-		RedrawRows(needsClear, overlays...)
+		RedrawRows(false, overlays...)
 	}
 	return nil
 }
@@ -205,7 +206,7 @@ func Display() bool {
 	})
 	ui.Handle("/sys/kbd/H", func(ui.Event) {
 		config.Toggle("enableHeader")
-		RedrawRows(true)
+		RedrawRows(false)
 	})
 	ui.Handle("/sys/kbd/r", func(e ui.Event) {
 		config.Toggle("sortReversed")

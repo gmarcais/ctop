@@ -1,6 +1,38 @@
 package main
 
-import ui "github.com/gizak/termui"
+import (
+	"image"
+
+	ui "github.com/gizak/termui"
+)
+
+// frameComposer remembers the last layout's footprint so disappearing rows can
+// be replaced with blank cells in the next frame, without clearing the screen.
+type frameComposer struct {
+	area image.Rectangle
+}
+
+func (c *frameComposer) capture(clear bool, viewport image.Rectangle, parts ...ui.Bufferer) *renderFrame {
+	f := newRenderFrame(clear, parts...)
+	current := f.buffer.Area.Intersect(viewport)
+	previous := c.area.Intersect(viewport)
+	c.area = current
+	if !clear {
+		blank := ui.Cell{Ch: ' ', Fg: ui.ColorDefault, Bg: ui.ThemeAttr("bg")}
+		for y := previous.Min.Y; y < previous.Max.Y; y++ {
+			for x := previous.Min.X; x < previous.Max.X; x++ {
+				p := image.Pt(x, y)
+				if _, exists := f.buffer.CellMap[p]; !exists {
+					f.buffer.Set(x, y, blank)
+				}
+			}
+		}
+		f.buffer.SetArea(current.Union(previous))
+	} else {
+		f.buffer.SetArea(current)
+	}
+	return f
+}
 
 // renderFrame captures layout before submitting it to termui's asynchronous
 // renderer. Later widget changes cannot alter a frame that is already queued.
