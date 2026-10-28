@@ -24,7 +24,7 @@ func NewMem() *Mem {
 		limitHist:  NewIntHist(9),
 	}
 	mem.Height = 13
-	mem.Width = colWidth[0]
+	mem.Width = defaultPanelWidth
 	mem.BorderLabel = "MEM"
 
 	mem.Chart.Data[0] = mem.valHist.Data
@@ -36,11 +36,19 @@ func NewMem() *Mem {
 
 func (w *Mem) Align() {
 	y := w.Y + 1
+	w.InnerLabel.SetX(w.X + 1)
 	w.InnerLabel.SetY(y)
+	w.InnerLabel.SetWidth(w.Width - 2)
+	w.Chart.SetX(w.X + 1)
 	w.Chart.SetY(y + w.InnerLabel.Height)
 
 	w.Chart.Height = w.Height - w.InnerLabel.Height - 2
 	w.Chart.SetWidth(w.Width - 2)
+	// Spread the existing history across the available chart width.
+	w.Chart.BarWidth = w.Chart.Width/len(w.valHist.Data) - w.Chart.BarGap
+	if w.Chart.BarWidth < 1 {
+		w.Chart.BarWidth = 1
+	}
 }
 
 func (w *Mem) Buffer() ui.Buffer {

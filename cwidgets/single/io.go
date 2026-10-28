@@ -18,7 +18,7 @@ func NewIO() *IO {
 	io := &IO{ui.NewSparklines(), NewDiffHist(60), NewDiffHist(60)}
 	io.BorderLabel = "IO"
 	io.Height = 6
-	io.Width = colWidth[0]
+	io.Width = defaultPanelWidth
 	io.X = 0
 	io.Y = 24
 

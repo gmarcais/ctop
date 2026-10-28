@@ -18,7 +18,7 @@ func NewNet() *Net {
 	net := &Net{ui.NewSparklines(), NewDiffHist(60), NewDiffHist(60)}
 	net.BorderLabel = "NET"
 	net.Height = 6
-	net.Width = colWidth[0]
+	net.Width = defaultPanelWidth
 	net.X = 0
 	net.Y = 24
 

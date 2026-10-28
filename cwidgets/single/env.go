@@ -17,7 +17,7 @@ type Env struct {
 func NewEnv() *Env {
 	p := ui.NewTable()
 	p.Height = 4
-	p.Width = colWidth[0]
+	p.Width = defaultPanelWidth
 	p.FgColor = ui.ThemeAttr("par.text.fg")
 	p.Separator = false
 	i := &Env{p, make(map[string]string)}
@@ -40,3 +40,5 @@ func (w *Env) Set(allEnvs string) {
 
 	w.Height = len(w.Rows) + 2
 }
+
+func (w *Env) Buffer() ui.Buffer { return tableBuffer(w.Table) }

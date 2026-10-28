@@ -98,26 +98,31 @@ func SingleView() MenuFn {
 		return nil
 	}
 
-	ui.Clear()
 	terminal.ResetHandlers()
 	defer terminal.ResetHandlers()
 
 	ex := single.NewSingle()
 	c.SetUpdater(ex)
 
-	ex.Align()
-	ui.Render(ex)
-
-	HandleKeys("up", ex.Up)
-	HandleKeys("down", ex.Down)
-	ui.Handle("/sys/kbd/", func(ui.Event) { ui.StopLoop() })
-
-	ui.Handle("/timer/1s", func(ui.Event) { ui.Render(ex) })
-	terminal.HandleResize(func(e ui.Event) {
-		width, _ := terminal.Size()
+	var frames frameComposer
+	firstFrame := true
+	draw := func() {
+		width, height := terminal.Size()
 		ex.SetWidth(width)
 		ex.Align()
-		log.Infof("resize: width=%v max-rows=%v", ex.Width, cGrid.MaxRows())
+		ui.Render(frames.capture(firstFrame, image.Rect(0, 0, width, height), ex))
+		firstFrame = false
+	}
+	draw()
+
+	HandleKeys("up", func() { ex.Up(); draw() })
+	HandleKeys("down", func() { ex.Down(); draw() })
+	ui.Handle("/sys/kbd/", func(ui.Event) { ui.StopLoop() })
+
+	ui.Handle("/timer/1s", func(ui.Event) { draw() })
+	terminal.HandleResize(func(e ui.Event) {
+		draw()
+		log.Infof("single view resize: width=%v", ex.Width)
 	})
 
 	ui.Loop()

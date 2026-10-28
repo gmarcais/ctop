@@ -14,7 +14,7 @@ func NewCpu() *Cpu {
 	cpu.Mode = "dot"
 	cpu.BorderLabel = "CPU"
 	cpu.Height = 12
-	cpu.Width = colWidth[0]
+	cpu.Width = defaultPanelWidth
 	cpu.X = 0
 	cpu.DataLabels = cpu.hist.Labels
 
