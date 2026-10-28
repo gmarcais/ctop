@@ -1,18 +1,22 @@
 package main
 
 import (
+	"image"
 	"time"
 
 	"github.com/bcicen/ctop/config"
 	"github.com/bcicen/ctop/cwidgets/single"
+	"github.com/bcicen/ctop/terminal"
 	"github.com/bcicen/ctop/widgets"
 	ui "github.com/gizak/termui"
 )
 
+var gridFrames frameComposer
+
 func ShowConnError(err error) (exit bool) {
 	ui.Clear()
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	setErr := func(err error) {
 		errView.Append(err.Error())
@@ -34,7 +38,7 @@ func ShowConnError(err error) (exit bool) {
 		setErr(err)
 	})
 
-	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
+	terminal.HandleResize(func(e ui.Event) {
 		errView.Resize()
 		ui.Clear()
 		ui.Render(errView)
@@ -47,7 +51,8 @@ func ShowConnError(err error) (exit bool) {
 	return exit
 }
 
-func RedrawRows(clr bool) {
+func RedrawRows(clr bool, overlays ...ui.Bufferer) {
+	width, height := terminal.Size()
 	// reinit body rows
 	cGrid.Clear()
 
@@ -63,31 +68,28 @@ func RedrawRows(clr bool) {
 	if buildMonitor != nil {
 		rows, warning := buildMonitor.Snapshot()
 		// Share the screen with containers, reserving space for their header and rows.
-		buildPanel = widgets.NewBuildPanel(rows, warning, ui.TermWidth()-2, (ui.TermHeight()-y-4)/2, time.Now())
+		buildPanel = widgets.NewBuildPanel(rows, warning, width-2, (height-y-4)/2, time.Now())
 		buildPanel.Y = y
 		y += buildPanel.Height
 	}
-	// Clear when the build section changes height, including when the last build ends.
-	clr = clr || cGrid.Y != y
 	cGrid.SetY(y)
 
 	for _, c := range cursor.filtered {
 		cGrid.AddRows(c.Widgets)
 	}
 
-	if clr {
-		ui.Clear()
-		log.Debugf("screen cleared")
-	}
-	if config.GetSwitchVal("enableHeader") {
-		ui.Render(header)
-	}
-	if buildPanel != nil && buildPanel.Height > 0 {
-		ui.Render(buildPanel)
-	}
 	cursor.ScrollPage()
 	cGrid.Align()
-	ui.Render(cGrid)
+	var parts []ui.Bufferer
+	if config.GetSwitchVal("enableHeader") {
+		parts = append(parts, header)
+	}
+	if buildPanel != nil && buildPanel.Height > 0 {
+		parts = append(parts, buildPanel)
+	}
+	parts = append(parts, cGrid)
+	parts = append(parts, overlays...)
+	ui.Render(gridFrames.capture(clr, image.Rect(0, 0, width, height), parts...))
 }
 
 func SingleView() MenuFn {
@@ -97,8 +99,8 @@ func SingleView() MenuFn {
 	}
 
 	ui.Clear()
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	ex := single.NewSingle()
 	c.SetUpdater(ex)
@@ -111,8 +113,9 @@ func SingleView() MenuFn {
 	ui.Handle("/sys/kbd/", func(ui.Event) { ui.StopLoop() })
 
 	ui.Handle("/timer/1s", func(ui.Event) { ui.Render(ex) })
-	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
-		ex.SetWidth(ui.TermWidth())
+	terminal.HandleResize(func(e ui.Event) {
+		width, _ := terminal.Size()
+		ex.SetWidth(width)
 		ex.Align()
 		log.Infof("resize: width=%v max-rows=%v", ex.Width, cGrid.MaxRows())
 	})
@@ -122,14 +125,14 @@ func SingleView() MenuFn {
 	return nil
 }
 
-func RefreshDisplay() error {
+func RefreshDisplay(overlays ...ui.Bufferer) error {
 	// skip display refresh during scroll
 	if !cursor.isScrolling {
-		needsClear, err := cursor.RefreshContainers()
+		_, err := cursor.RefreshContainers()
 		if err != nil {
 			return err
 		}
-		RedrawRows(needsClear)
+		RedrawRows(false, overlays...)
 	}
 	return nil
 }
@@ -138,7 +141,8 @@ func Display() bool {
 	var menu MenuFn
 	var connErr error
 
-	cGrid.SetWidth(ui.TermWidth())
+	width, _ := terminal.Size()
+	cGrid.SetWidth(width)
 	ui.DefaultEvtStream.Hook(logEvent)
 
 	// initial draw
@@ -202,7 +206,7 @@ func Display() bool {
 	})
 	ui.Handle("/sys/kbd/H", func(ui.Event) {
 		config.Toggle("enableHeader")
-		RedrawRows(true)
+		RedrawRows(false)
 	})
 	ui.Handle("/sys/kbd/r", func(e ui.Event) {
 		config.Toggle("sortReversed")
@@ -235,11 +239,12 @@ func Display() bool {
 		}
 	})
 
-	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
+	terminal.HandleResize(func(e ui.Event) {
+		width, _ := terminal.Size()
 		header.Align()
 		status.Align()
 		cursor.ScrollPage()
-		cGrid.SetWidth(ui.TermWidth())
+		cGrid.SetWidth(width)
 		log.Infof("resize: width=%v max-rows=%v", cGrid.Width, cGrid.MaxRows())
 		RedrawRows(true)
 	})

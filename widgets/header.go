@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bcicen/ctop/terminal"
+
 	ui "github.com/gizak/termui"
 )
 
@@ -34,7 +36,8 @@ func (c *CTopHeader) Buffer() ui.Buffer {
 }
 
 func (c *CTopHeader) Align() {
-	c.bg.SetWidth(ui.TermWidth() - 1)
+	width, _ := terminal.Size()
+	c.bg.SetWidth(width - 1)
 }
 
 func (c *CTopHeader) Height() int {

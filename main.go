@@ -14,6 +14,7 @@ import (
 	"github.com/bcicen/ctop/container"
 	"github.com/bcicen/ctop/cwidgets/compact"
 	"github.com/bcicen/ctop/logging"
+	"github.com/bcicen/ctop/terminal"
 	"github.com/bcicen/ctop/widgets"
 	ui "github.com/gizak/termui"
 	tm "github.com/nsf/termbox-go"
@@ -97,6 +98,7 @@ func main() {
 	if err := ui.Init(); err != nil {
 		panic(err)
 	}
+	terminal.Init()
 	tm.SetInputMode(tm.InputAlt)
 
 	defer Shutdown()

@@ -1,6 +1,8 @@
 package compact
 
 import (
+	"github.com/bcicen/ctop/terminal"
+
 	ui "github.com/gizak/termui"
 )
 
@@ -47,7 +49,8 @@ func (cg *CompactGrid) SetX(x int)     { cg.X = x }
 func (cg *CompactGrid) SetY(y int)     { cg.Y = y }
 func (cg *CompactGrid) SetWidth(w int) { cg.Width = w }
 func (cg *CompactGrid) MaxRows() int {
-	n := ui.TermHeight() - cg.header.Height - cg.Y
+	_, height := terminal.Size()
+	n := height - cg.header.Height - cg.Y
 	if n < 1 {
 		return 1
 	}

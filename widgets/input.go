@@ -19,7 +19,8 @@ type Input struct {
 	MaxLen      int
 	TextFgColor ui.Attribute
 	TextBgColor ui.Attribute
-	stream      chan string // stream text as it changes
+	OnChange    func(string) // optional owner-rendered input updates
+	stream      chan string  // stream text as it changes
 	padding     Padding
 }
 
@@ -69,9 +70,10 @@ func (i *Input) KeyPress(e ui.Event) {
 		idx := len(i.Data) - 1
 		if idx > -1 {
 			i.Data = i.Data[0:idx]
-			i.stream <- i.Data
+			i.changed()
+		} else if i.OnChange == nil {
+			ui.Render(i)
 		}
-		ui.Render(i)
 		return
 	}
 	if len(i.Data) >= i.MaxLen {
@@ -79,9 +81,17 @@ func (i *Input) KeyPress(e ui.Event) {
 	}
 	if strings.Contains(input_chars, ch) {
 		i.Data += ch
-		i.stream <- i.Data
-		ui.Render(i)
+		i.changed()
 	}
+}
+
+func (i *Input) changed() {
+	if i.OnChange != nil {
+		i.OnChange(i.Data)
+		return
+	}
+	i.stream <- i.Data
+	ui.Render(i)
 }
 
 // Setup some default handlers for menu navigation

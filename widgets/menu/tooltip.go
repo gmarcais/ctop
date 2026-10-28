@@ -1,6 +1,8 @@
 package menu
 
 import (
+	"github.com/bcicen/ctop/terminal"
+
 	ui "github.com/gizak/termui"
 )
 
@@ -47,9 +49,10 @@ func (t *ToolTip) Buffer() ui.Buffer {
 
 // Set width and height based on screen size
 func (t *ToolTip) Align() {
-	t.Width = ui.TermWidth() - (t.padding[0] * 2)
+	width, height := terminal.Size()
+	t.Width = width - (t.padding[0] * 2)
 	t.Height = len(t.Lines) + (t.padding[1] * 2)
-	t.Y = ui.TermHeight() - t.Height
+	t.Y = height - t.Height
 
 	t.Block.Align()
 }

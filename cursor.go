@@ -5,7 +5,6 @@ import (
 
 	"github.com/bcicen/ctop/connector"
 	"github.com/bcicen/ctop/container"
-	ui "github.com/gizak/termui"
 )
 
 type GridCursor struct {
@@ -93,12 +92,10 @@ func (gc *GridCursor) ScrollPage() {
 	// page down
 	if idx >= cGrid.Offset+cGrid.MaxRows() {
 		cGrid.Offset = idx - cGrid.MaxRows() + 1
-		cGrid.Align()
 	}
 	// page up
 	if idx < cGrid.Offset {
 		cGrid.Offset = idx
-		cGrid.Align()
 	}
 
 }
@@ -118,8 +115,7 @@ func (gc *GridCursor) Up() {
 	gc.selectedID = next.Id
 	next.Widgets.Highlight()
 
-	gc.ScrollPage()
-	ui.Render(cGrid)
+	RedrawRows(false)
 }
 
 func (gc *GridCursor) Down() {
@@ -137,8 +133,7 @@ func (gc *GridCursor) Down() {
 	gc.selectedID = next.Id
 	next.Widgets.Highlight()
 
-	gc.ScrollPage()
-	ui.Render(cGrid)
+	RedrawRows(false)
 }
 
 func (gc *GridCursor) PgUp() {
@@ -160,8 +155,7 @@ func (gc *GridCursor) PgUp() {
 	gc.selectedID = next.Id
 	next.Widgets.Highlight()
 
-	cGrid.Align()
-	ui.Render(cGrid)
+	RedrawRows(false)
 }
 
 func (gc *GridCursor) PgDown() {
@@ -183,8 +177,7 @@ func (gc *GridCursor) PgDown() {
 	gc.selectedID = next.Id
 	next.Widgets.Highlight()
 
-	cGrid.Align()
-	ui.Render(cGrid)
+	RedrawRows(false)
 }
 
 // number of pages at current row count and term height
