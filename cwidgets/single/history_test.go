@@ -90,15 +90,15 @@ func TestCPUUsesWidePlotAndNewestVisibleSamples(t *testing.T) {
 		inner := cpu.InnerBounds()
 		dots := make(map[int]bool)
 		for p, cell := range buf.CellMap {
-			if cell.Ch == cpu.DotStyle && p.In(inner) {
+			if cell.Ch >= '\u2801' && cell.Ch <= '\u28ff' && p.In(inner) {
 				dots[p.X] = true
 			}
 		}
 		if !dots[inner.Max.X-1] || len(dots) < width-15 {
 			t.Fatalf("CPU plot does not fill width %d: %d plotted columns", width, len(dots))
 		}
-		series := cpu.Data["CPU"]
-		if len(series) != inner.Dx() || series[len(series)-1] != 42 || series[len(series)-2] != 10 {
+		series := visibleHistory(cpu.hist.Data, inner.Dx()-cpuAxisWidth)
+		if len(series) != inner.Dx()-cpuAxisWidth || series[len(series)-1] != 42 || series[len(series)-2] != 10 {
 			t.Fatal("CPU resize lost or misplaced recent samples")
 		}
 	}
