@@ -48,7 +48,7 @@ func ShowConnError(err error) (exit bool) {
 	return exit
 }
 
-func RedrawRows(clr bool) {
+func RedrawRows(clr bool, overlays ...ui.Bufferer) {
 	width, height := terminal.Size()
 	// reinit body rows
 	cGrid.Clear()
@@ -77,19 +77,18 @@ func RedrawRows(clr bool) {
 		cGrid.AddRows(c.Widgets)
 	}
 
-	if clr {
-		ui.Clear()
-		log.Debugf("screen cleared")
-	}
-	if config.GetSwitchVal("enableHeader") {
-		ui.Render(header)
-	}
-	if buildPanel != nil && buildPanel.Height > 0 {
-		ui.Render(buildPanel)
-	}
 	cursor.ScrollPage()
 	cGrid.Align()
-	ui.Render(cGrid)
+	var parts []ui.Bufferer
+	if config.GetSwitchVal("enableHeader") {
+		parts = append(parts, header)
+	}
+	if buildPanel != nil && buildPanel.Height > 0 {
+		parts = append(parts, buildPanel)
+	}
+	parts = append(parts, cGrid)
+	parts = append(parts, overlays...)
+	ui.Render(newRenderFrame(clr, parts...))
 }
 
 func SingleView() MenuFn {
@@ -125,14 +124,14 @@ func SingleView() MenuFn {
 	return nil
 }
 
-func RefreshDisplay() error {
+func RefreshDisplay(overlays ...ui.Bufferer) error {
 	// skip display refresh during scroll
 	if !cursor.isScrolling {
 		needsClear, err := cursor.RefreshContainers()
 		if err != nil {
 			return err
 		}
-		RedrawRows(needsClear)
+		RedrawRows(needsClear, overlays...)
 	}
 	return nil
 }

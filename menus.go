@@ -63,17 +63,13 @@ func FilterMenu() MenuFn {
 	_, height := terminal.Size()
 	i.SetY(height - i.Height)
 	i.Data = config.GetVal("filterStr")
-	ui.Render(i)
+	RedrawRows(false, i)
 
-	// refresh container rows on input
-	stream := i.Stream()
-	go func() {
-		for s := range stream {
-			config.Update("filterStr", s)
-			RefreshDisplay()
-			ui.Render(i)
-		}
-	}()
+	// Include the input overlay in the same frame as the filtered rows.
+	i.OnChange = func(s string) {
+		config.Update("filterStr", s)
+		RefreshDisplay(i)
+	}
 
 	i.InputHandlers()
 	ui.Handle("/sys/kbd/<escape>", func(ui.Event) {
