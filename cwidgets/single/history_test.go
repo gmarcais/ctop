@@ -106,6 +106,7 @@ func TestCPUUsesWidePlotAndNewestVisibleSamples(t *testing.T) {
 
 func TestChartUpdatesDuringHistoryResize(t *testing.T) {
 	cpu, net, io := NewCpu(), NewNet(), NewIO()
+	mem := NewMem()
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
@@ -114,6 +115,7 @@ func TestChartUpdatesDuringHistoryResize(t *testing.T) {
 			cpu.Update(n)
 			net.Update(int64(n*10), int64(n*20))
 			io.Update(int64(n*30), int64(n*40))
+			mem.Update(n, 100)
 		}
 	}()
 	for n := 0; n < 30; n++ {
@@ -121,9 +123,58 @@ func TestChartUpdatesDuringHistoryResize(t *testing.T) {
 		cpu.SetWidth(width)
 		net.SetWidth(width)
 		io.SetWidth(width)
+		mem.SetWidth(width)
 		cpu.Buffer()
 		net.Buffer()
 		io.Buffer()
+		mem.Buffer()
 	}
 	wg.Wait()
+}
+
+func TestMemoryPlotsOneColumnSamplesAcrossAvailableWidth(t *testing.T) {
+	mem := NewMem()
+	mem.Chart.BarColor[0] = ui.ColorGreen
+	mem.SetWidth(180)
+	mem.Buffer() // grow history before the first sample
+	mem.Update(40, 100)
+	buf := mem.Buffer()
+	inner := mem.Chart.InnerBounds()
+	if cell := buf.At(inner.Max.X-1, inner.Max.Y-2); cell.Bg != mem.Chart.BarColor[0] {
+		t.Fatalf("new memory sample is not at the right edge: %+v", cell)
+	}
+	for n := 0; n < 200; n++ {
+		mem.Update(40, 100)
+	}
+	for _, width := range []int{180, 40, 120, 80, 180} {
+		mem.SetWidth(width)
+		buf := mem.Buffer()
+		inner := mem.Chart.InnerBounds()
+		for x := inner.Min.X; x < inner.Max.X; x++ {
+			if cell := buf.At(x, inner.Max.Y-2); cell.Bg != mem.Chart.BarColor[0] {
+				t.Fatalf("memory history has a gap or truncated sample at column %d, width %d: %+v", x, width, cell)
+			}
+		}
+		if len(mem.Chart.Data[0]) != inner.Dx() || len(mem.Chart.Data[1]) != inner.Dx() {
+			t.Fatal("memory series do not match the available width")
+		}
+	}
+	// A single changed value must occupy exactly the newest column, rather than
+	// stretching across multiple cells as the old nine-bar chart did.
+	mem.Update(100, 100)
+	buf = mem.Buffer()
+	inner = mem.Chart.InnerBounds()
+	y := inner.Min.Y
+	used := 0
+	for x := inner.Min.X; x < inner.Max.X; x++ {
+		if buf.At(x, y).Bg == mem.Chart.BarColor[0] {
+			used++
+		}
+	}
+	if used != 1 || buf.At(inner.Max.X-1, y).Bg != mem.Chart.BarColor[0] {
+		t.Fatalf("new memory spike occupies %d columns instead of the rightmost column", used)
+	}
+	if mem.InnerLabel.Text == "" || mem.InnerLabel.Text == "-" {
+		t.Fatal("memory summary was lost")
+	}
 }

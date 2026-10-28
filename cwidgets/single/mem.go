@@ -2,6 +2,7 @@ package single
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/bcicen/ctop/cwidgets"
 	ui "github.com/gizak/termui"
@@ -13,6 +14,7 @@ type Mem struct {
 	InnerLabel *ui.Par
 	valHist    *IntHist
 	limitHist  *IntHist
+	mu         sync.Mutex
 }
 
 func NewMem() *Mem {
@@ -44,14 +46,21 @@ func (w *Mem) Align() {
 
 	w.Chart.Height = w.Height - w.InnerLabel.Height - 2
 	w.Chart.SetWidth(w.Width - 2)
-	// Spread the existing history across the available chart width.
-	w.Chart.BarWidth = w.Chart.Width/len(w.valHist.Data) - w.Chart.BarGap
-	if w.Chart.BarWidth < 1 {
-		w.Chart.BarWidth = 1
-	}
 }
 
 func (w *Mem) Buffer() ui.Buffer {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.Align()
+	width := w.Chart.Width
+	if width <= 0 {
+		return w.Block.Buffer()
+	}
+	w.valHist.Grow(width)
+	w.limitHist.Grow(width)
+	w.Chart.Data[0] = visibleHistory(w.valHist.Data, width)
+	w.Chart.Data[1] = visibleHistory(w.limitHist.Data, width)
+	w.Chart.DataLabels = visibleHistory(w.valHist.Labels, width)
 	buf := ui.NewBuffer()
 	buf.Merge(w.Block.Buffer())
 	buf.Merge(w.InnerLabel.Buffer())
@@ -72,18 +81,22 @@ func newMemChart() *ui.MBarChart {
 	mbar := ui.NewMBarChart()
 	mbar.X = 1
 	mbar.Border = false
-	mbar.BarGap = 1
-	mbar.BarWidth = 6
+	mbar.BarGap = 0
+	mbar.BarWidth = 1
 
 	mbar.BarColor[1] = ui.ColorBlack
 	mbar.NumColor[1] = ui.ColorBlack
 
-	mbar.NumFmt = cwidgets.ByteFormatShort
+	// The summary label provides the values; individual one-column samples
+	// cannot accommodate readable numeric labels.
+	mbar.NumFmt = func(int) string { return "" }
 	//mbar.ShowScale = true
 	return mbar
 }
 
 func (w *Mem) Update(val int, limit int) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	w.valHist.Append(val)
 	w.limitHist.Append(limit - val)
 	w.InnerLabel.Text = fmt.Sprintf("%v / %v", cwidgets.ByteFormatShort(val), cwidgets.ByteFormatShort(limit))

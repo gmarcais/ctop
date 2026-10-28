@@ -29,9 +29,6 @@ func TestSinglePanelsFollowWidth(t *testing.T) {
 		if s.Mem.Chart.X != s.X+1 || s.Mem.Chart.Width != width-2 || s.Mem.InnerLabel.Width != width-2 {
 			t.Fatal("memory chart children did not follow panel geometry")
 		}
-		if bars := s.Mem.Chart.Width / (s.Mem.Chart.BarWidth + s.Mem.Chart.BarGap); bars < len(s.Mem.valHist.Data) {
-			t.Fatalf("width %d hides memory history: %d bars", width, bars)
-		}
 		buf := s.Buffer()
 		if got := buf.Area.Dx(); got != width {
 			t.Errorf("rendered width = %d, want %d", got, width)
