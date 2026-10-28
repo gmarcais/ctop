@@ -3,6 +3,7 @@ package single
 import (
 	"github.com/bcicen/ctop/logging"
 	"github.com/bcicen/ctop/models"
+	"github.com/bcicen/ctop/terminal"
 	ui "github.com/gizak/termui"
 )
 
@@ -24,6 +25,7 @@ type Single struct {
 }
 
 func NewSingle() *Single {
+	width, _ := terminal.Size()
 	return &Single{
 		Info:  NewInfo(),
 		Net:   NewNet(),
@@ -31,7 +33,7 @@ func NewSingle() *Single {
 		Mem:   NewMem(),
 		IO:    NewIO(),
 		Env:   NewEnv(),
-		Width: ui.TermWidth(),
+		Width: width,
 	}
 }
 
@@ -44,7 +46,8 @@ func (e *Single) Up() {
 }
 
 func (e *Single) Down() {
-	if e.Y > (ui.TermHeight() - e.GetHeight()) {
+	_, height := terminal.Size()
+	if e.Y > (height - e.GetHeight()) {
 		e.Y--
 		e.Align()
 		ui.Render(e)
@@ -81,8 +84,9 @@ func (e *Single) GetHeight() (h int) {
 }
 
 func (e *Single) Align() {
+	_, height := terminal.Size()
 	// reset offset if needed
-	if e.GetHeight() <= ui.TermHeight() {
+	if e.GetHeight() <= height {
 		e.Y = 0
 	}
 

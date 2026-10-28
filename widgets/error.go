@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bcicen/ctop/terminal"
+
 	ui "github.com/gizak/termui"
 )
 
@@ -55,6 +57,7 @@ func (w *ErrorView) Buffer() ui.Buffer {
 }
 
 func (w *ErrorView) Resize() {
-	w.Height = ui.TermHeight() - (w.PaddingTop + w.PaddingBottom)
-	w.SetWidth(ui.TermWidth() - (w.PaddingLeft + w.PaddingRight))
+	width, height := terminal.Size()
+	w.Height = height - (w.PaddingTop + w.PaddingBottom)
+	w.SetWidth(width - (w.PaddingLeft + w.PaddingRight))
 }

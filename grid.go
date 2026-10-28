@@ -5,14 +5,15 @@ import (
 
 	"github.com/bcicen/ctop/config"
 	"github.com/bcicen/ctop/cwidgets/single"
+	"github.com/bcicen/ctop/terminal"
 	"github.com/bcicen/ctop/widgets"
 	ui "github.com/gizak/termui"
 )
 
 func ShowConnError(err error) (exit bool) {
 	ui.Clear()
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	setErr := func(err error) {
 		errView.Append(err.Error())
@@ -34,7 +35,7 @@ func ShowConnError(err error) (exit bool) {
 		setErr(err)
 	})
 
-	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
+	terminal.HandleResize(func(e ui.Event) {
 		errView.Resize()
 		ui.Clear()
 		ui.Render(errView)
@@ -48,6 +49,7 @@ func ShowConnError(err error) (exit bool) {
 }
 
 func RedrawRows(clr bool) {
+	width, height := terminal.Size()
 	// reinit body rows
 	cGrid.Clear()
 
@@ -63,7 +65,7 @@ func RedrawRows(clr bool) {
 	if buildMonitor != nil {
 		rows, warning := buildMonitor.Snapshot()
 		// Share the screen with containers, reserving space for their header and rows.
-		buildPanel = widgets.NewBuildPanel(rows, warning, ui.TermWidth()-2, (ui.TermHeight()-y-4)/2, time.Now())
+		buildPanel = widgets.NewBuildPanel(rows, warning, width-2, (height-y-4)/2, time.Now())
 		buildPanel.Y = y
 		y += buildPanel.Height
 	}
@@ -97,8 +99,8 @@ func SingleView() MenuFn {
 	}
 
 	ui.Clear()
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	ex := single.NewSingle()
 	c.SetUpdater(ex)
@@ -111,8 +113,9 @@ func SingleView() MenuFn {
 	ui.Handle("/sys/kbd/", func(ui.Event) { ui.StopLoop() })
 
 	ui.Handle("/timer/1s", func(ui.Event) { ui.Render(ex) })
-	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
-		ex.SetWidth(ui.TermWidth())
+	terminal.HandleResize(func(e ui.Event) {
+		width, _ := terminal.Size()
+		ex.SetWidth(width)
 		ex.Align()
 		log.Infof("resize: width=%v max-rows=%v", ex.Width, cGrid.MaxRows())
 	})
@@ -138,7 +141,8 @@ func Display() bool {
 	var menu MenuFn
 	var connErr error
 
-	cGrid.SetWidth(ui.TermWidth())
+	width, _ := terminal.Size()
+	cGrid.SetWidth(width)
 	ui.DefaultEvtStream.Hook(logEvent)
 
 	// initial draw
@@ -235,11 +239,12 @@ func Display() bool {
 		}
 	})
 
-	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
+	terminal.HandleResize(func(e ui.Event) {
+		width, _ := terminal.Size()
 		header.Align()
 		status.Align()
 		cursor.ScrollPage()
-		cGrid.SetWidth(ui.TermWidth())
+		cGrid.SetWidth(width)
 		log.Infof("resize: width=%v max-rows=%v", cGrid.Width, cGrid.MaxRows())
 		RedrawRows(true)
 	})

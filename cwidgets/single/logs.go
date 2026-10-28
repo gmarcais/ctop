@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/bcicen/ctop/models"
+	"github.com/bcicen/ctop/terminal"
 	ui "github.com/gizak/termui"
 )
 
@@ -50,11 +51,12 @@ type Logs struct {
 }
 
 func NewLogs(stream chan models.Log) *Logs {
+	width, height := terminal.Size()
 	p := ui.NewList()
-	p.Y = ui.TermHeight() / 2
+	p.Y = height / 2
 	p.X = 0
-	p.Height = ui.TermHeight() - p.Y
-	p.Width = ui.TermWidth()
+	p.Height = height - p.Y
+	p.Width = width
 	//p.Overflow = "wrap"
 	p.ItemFgColor = ui.ThemeAttr("par.text.fg")
 	i := &Logs{p, NewLogLines(4098)}

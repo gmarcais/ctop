@@ -1,6 +1,8 @@
 package widgets
 
 import (
+	"github.com/bcicen/ctop/terminal"
+
 	ui "github.com/gizak/termui"
 )
 
@@ -29,8 +31,8 @@ func NewStatusLine() *StatusLine {
 }
 
 func (sl *StatusLine) Display() {
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	iter := statusIter
 	ui.Handle("/sys/kbd/", func(ui.Event) {
@@ -68,11 +70,12 @@ func (sl *StatusLine) Buffer() ui.Buffer {
 }
 
 func (sl *StatusLine) Align() {
-	sl.bg.SetWidth(ui.TermWidth() - 1)
-	sl.Message.SetWidth(ui.TermWidth() - 2)
+	width, height := terminal.Size()
+	sl.bg.SetWidth(width - 1)
+	sl.Message.SetWidth(width - 2)
 
-	sl.bg.Y = ui.TermHeight() - 1
-	sl.Message.Y = ui.TermHeight() - 1
+	sl.bg.Y = height - 1
+	sl.Message.Y = height - 1
 }
 
 func (sl *StatusLine) Height() int { return statusHeight }

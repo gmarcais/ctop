@@ -1,6 +1,8 @@
 package widgets
 
 import (
+	"github.com/bcicen/ctop/terminal"
+
 	ui "github.com/gizak/termui"
 	"github.com/mattn/go-runewidth"
 )
@@ -36,8 +38,7 @@ func NewTextView(lines <-chan ToggleText) *TextView {
 
 	t.BorderFg = ui.ThemeAttr("menu.border.fg")
 	t.BorderLabelFg = ui.ThemeAttr("menu.label.fg")
-	t.Height = ui.TermHeight()
-	t.Width = ui.TermWidth()
+	t.Width, t.Height = terminal.Size()
 
 	t.readInputLoop()
 	t.renderLoop()
@@ -48,8 +49,7 @@ func NewTextView(lines <-chan ToggleText) *TextView {
 // after calling this method, it is called automatically
 func (t *TextView) Resize() {
 	ui.Clear()
-	t.Height = ui.TermHeight()
-	t.Width = ui.TermWidth()
+	t.Width, t.Height = terminal.Size()
 	t.render <- true
 }
 

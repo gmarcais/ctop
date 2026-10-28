@@ -7,6 +7,7 @@ import (
 
 	"github.com/bcicen/ctop/config"
 	"github.com/bcicen/ctop/container"
+	"github.com/bcicen/ctop/terminal"
 	"github.com/bcicen/ctop/widgets"
 	"github.com/bcicen/ctop/widgets/menu"
 	ui "github.com/gizak/termui"
@@ -36,13 +37,13 @@ var helpDialog = []menu.Item{
 
 func HelpMenu() MenuFn {
 	ui.Clear()
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	m := menu.NewMenu()
 	m.BorderLabel = "Help"
 	m.AddItems(helpDialog...)
-	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
+	terminal.HandleResize(func(e ui.Event) {
 		ui.Clear()
 		ui.Render(m)
 	})
@@ -54,12 +55,13 @@ func HelpMenu() MenuFn {
 }
 
 func FilterMenu() MenuFn {
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	i := widgets.NewInput()
 	i.BorderLabel = "Filter"
-	i.SetY(ui.TermHeight() - i.Height)
+	_, height := terminal.Size()
+	i.SetY(height - i.Height)
 	i.Data = config.GetVal("filterStr")
 	ui.Render(i)
 
@@ -88,8 +90,8 @@ func FilterMenu() MenuFn {
 
 func SortMenu() MenuFn {
 	ui.Clear()
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	m := menu.NewMenu()
 	m.Selectable = true
@@ -125,8 +127,8 @@ func ColumnsMenu() MenuFn {
 	)
 
 	ui.Clear()
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	m := menu.NewMenu()
 	m.Selectable = true
@@ -206,8 +208,8 @@ func ContainerMenu() MenuFn {
 		return nil
 	}
 
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	m := menu.NewMenu()
 	m.Selectable = true
@@ -339,15 +341,15 @@ func LogMenu() MenuFn {
 		return nil
 	}
 
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 
 	logs, quit := logReader(c)
 	m := widgets.NewTextView(logs)
 	m.BorderLabel = fmt.Sprintf("Logs [%s]", c.GetMeta("name"))
 	ui.Render(m)
 
-	ui.Handle("/sys/wnd/resize", func(e ui.Event) {
+	terminal.HandleResize(func(e ui.Event) {
 		m.Resize()
 	})
 	ui.Handle("/sys/kbd/t", func(ui.Event) {
@@ -368,8 +370,8 @@ func ExecShell() MenuFn {
 		return nil
 	}
 
-	ui.DefaultEvtStream.ResetHandlers()
-	defer ui.DefaultEvtStream.ResetHandlers()
+	terminal.ResetHandlers()
+	defer terminal.ResetHandlers()
 	// Detect and execute default shell in container.
 	// Execute Ash shell command: /bin/sh -c
 	// Reset colors: printf '\e[0m\e[?25h'
@@ -405,8 +407,8 @@ func OpenInBrowser() MenuFn {
 // func to perform if confirmed
 func Confirm(txt string, fn func()) MenuFn {
 	menu := func() MenuFn {
-		ui.DefaultEvtStream.ResetHandlers()
-		defer ui.DefaultEvtStream.ResetHandlers()
+		terminal.ResetHandlers()
+		defer terminal.ResetHandlers()
 
 		m := menu.NewMenu()
 		m.Selectable = true
