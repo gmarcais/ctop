@@ -16,7 +16,7 @@ type Info struct {
 func NewInfo() *Info {
 	p := ui.NewTable()
 	p.Height = 4
-	p.Width = colWidth[0]
+	p.Width = defaultPanelWidth
 	p.FgColor = ui.ThemeAttr("par.text.fg")
 	p.Separator = false
 	i := &Info{p, make(map[string]string)}
@@ -35,6 +35,26 @@ func (w *Info) Set(k, v string) {
 	}
 
 	w.Height = len(w.Rows) + 2
+}
+
+func (w *Info) Buffer() ui.Buffer { return tableBuffer(w.Table) }
+
+// termui tables can draw long values over their borders. Clip the table body
+// separately so narrower layouts keep their panel edges intact.
+func tableBuffer(table *ui.Table) ui.Buffer {
+	buf := table.Buffer()
+	inner := table.InnerBounds()
+	for p := range buf.CellMap {
+		if !p.In(inner) {
+			delete(buf.CellMap, p)
+		}
+	}
+	for p, cell := range table.Block.Buffer().CellMap {
+		if !p.In(inner) {
+			buf.Set(p.X, p.Y, cell)
+		}
+	}
+	return buf
 }
 
 // Build row(s) from a key and value string

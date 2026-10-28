@@ -21,6 +21,32 @@ func (h *IntHist) Append(val int) {
 	h.Data = append(h.Data, val)
 }
 
+// Grow adds empty history on the left, preserving all retained samples. Smaller
+// viewports select a suffix instead of discarding history on every resize.
+func (h *IntHist) Grow(size int) {
+	h.Data = growHistory(h.Data, size)
+	h.Labels = growHistory(h.Labels, size)
+}
+
+func growHistory[T any](data []T, size int) []T {
+	if size <= len(data) {
+		return data
+	}
+	grown := make([]T, size)
+	copy(grown[size-len(data):], data)
+	return grown
+}
+
+func visibleHistory[T any](data []T, width int) []T {
+	if width < 0 {
+		width = 0
+	}
+	if width < len(data) {
+		return data[len(data)-width:]
+	}
+	return data
+}
+
 type DiffHist struct {
 	*IntHist
 	lastVal int
@@ -51,10 +77,15 @@ func NewFloatHist(max int) FloatHist {
 	}
 }
 
-func (h FloatHist) Append(val float64) {
+func (h *FloatHist) Append(val float64) {
 	if len(h.Data) == cap(h.Data) {
 		h.Data = append(h.Data[:0], h.Data[1:]...)
 	}
 	h.Val = val
 	h.Data = append(h.Data, val)
+}
+
+func (h *FloatHist) Grow(size int) {
+	h.Data = growHistory(h.Data, size)
+	h.Labels = growHistory(h.Labels, size)
 }

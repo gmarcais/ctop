@@ -3,6 +3,7 @@ package single
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/bcicen/ctop/cwidgets"
 	ui "github.com/gizak/termui"
@@ -12,13 +13,14 @@ type IO struct {
 	*ui.Sparklines
 	readHist  *DiffHist
 	writeHist *DiffHist
+	mu        sync.Mutex
 }
 
 func NewIO() *IO {
-	io := &IO{ui.NewSparklines(), NewDiffHist(60), NewDiffHist(60)}
+	io := &IO{Sparklines: ui.NewSparklines(), readHist: NewDiffHist(60), writeHist: NewDiffHist(60)}
 	io.BorderLabel = "IO"
 	io.Height = 6
-	io.Width = colWidth[0]
+	io.Width = defaultPanelWidth
 	io.X = 0
 	io.Y = 24
 
@@ -39,6 +41,8 @@ func NewIO() *IO {
 }
 
 func (w *IO) Update(read int64, write int64) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	var rate string
 
 	w.readHist.Append(int(read))
@@ -48,4 +52,18 @@ func (w *IO) Update(read int64, write int64) {
 	w.writeHist.Append(int(write))
 	rate = strings.ToLower(cwidgets.ByteFormatShort(w.writeHist.Val))
 	w.Lines[1].Title = fmt.Sprintf("write [%s/s]", rate)
+}
+
+func (w *IO) Buffer() ui.Buffer {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	width := w.InnerBounds().Dx()
+	if width <= 0 {
+		return w.Block.Buffer()
+	}
+	w.readHist.Grow(width)
+	w.writeHist.Grow(width)
+	w.Lines[0].Data = visibleHistory(w.readHist.Data, width)
+	w.Lines[1].Data = visibleHistory(w.writeHist.Data, width)
+	return w.Sparklines.Buffer()
 }

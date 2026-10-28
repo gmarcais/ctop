@@ -70,7 +70,7 @@ func NewLogs(stream chan models.Log) *Logs {
 }
 
 func (w *Logs) Align() {
-	w.X = colWidth[0]
+	w.X = defaultPanelWidth
 	w.List.Align()
 }
 
