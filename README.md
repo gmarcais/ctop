@@ -90,6 +90,27 @@ Build steps can be found [here][build].
 
 While running, use `S` to save the current filters, sort field, and other options to a default config path (`~/.config/ctop/config` on XDG systems, else `~/.ctop`).
 
+With the Docker connector, active image builds appear in a read-only section above
+the container rows. Each row shows the build name, builder, elapsed time, and
+completed/total steps with cached steps when reported by BuildKit. Counts that are
+not yet available display `-`; they are not a time-based completion percentage.
+Rows disappear when builds finish. The section refreshes every two seconds and
+leaves room for containers, summarizing additional builds when space is limited.
+
+Build discovery requires the `docker` CLI with Buildx supporting
+`docker buildx history ls --filter status=running --format json` on `PATH`, plus a
+BuildKit version that supports build history. ctop queries running builders known
+to the CLI, including the default builder and named Buildx builders, using the
+CLI's Docker configuration and environment. Legacy builder jobs are not supported.
+Unavailable build history is reported in the build section; container monitoring
+continues. Disable build discovery with `ctop -builds=false`.
+
+When running ctop in a container, the Docker socket alone is insufficient for
+build discovery: the container also needs the Docker CLI, Buildx plugin, and the
+appropriate Docker configuration to discover named builders. Build rows do not
+support container actions or attribute shared builder CPU/memory to individual
+builds.
+
 Config file values will be loaded and applied the next time `ctop` is started.
 
 ### Options

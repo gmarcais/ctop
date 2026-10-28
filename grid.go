@@ -1,8 +1,11 @@
 package main
 
 import (
+	"time"
+
 	"github.com/bcicen/ctop/config"
 	"github.com/bcicen/ctop/cwidgets/single"
+	"github.com/bcicen/ctop/widgets"
 	ui "github.com/gizak/termui"
 )
 
@@ -56,6 +59,16 @@ func RedrawRows(clr bool) {
 		y += header.Height()
 	}
 
+	var buildPanel *widgets.BuildPanel
+	if buildMonitor != nil {
+		rows, warning := buildMonitor.Snapshot()
+		// Share the screen with containers, reserving space for their header and rows.
+		buildPanel = widgets.NewBuildPanel(rows, warning, ui.TermWidth()-2, (ui.TermHeight()-y-4)/2, time.Now())
+		buildPanel.Y = y
+		y += buildPanel.Height
+	}
+	// Clear when the build section changes height, including when the last build ends.
+	clr = clr || cGrid.Y != y
 	cGrid.SetY(y)
 
 	for _, c := range cursor.filtered {
@@ -69,6 +82,10 @@ func RedrawRows(clr bool) {
 	if config.GetSwitchVal("enableHeader") {
 		ui.Render(header)
 	}
+	if buildPanel != nil && buildPanel.Height > 0 {
+		ui.Render(buildPanel)
+	}
+	cursor.ScrollPage()
 	cGrid.Align()
 	ui.Render(cGrid)
 }

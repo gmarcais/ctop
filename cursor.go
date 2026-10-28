@@ -92,12 +92,12 @@ func (gc *GridCursor) ScrollPage() {
 
 	// page down
 	if idx >= cGrid.Offset+cGrid.MaxRows() {
-		cGrid.Offset++
+		cGrid.Offset = idx - cGrid.MaxRows() + 1
 		cGrid.Align()
 	}
 	// page up
 	if idx < cGrid.Offset {
-		cGrid.Offset--
+		cGrid.Offset = idx
 		cGrid.Align()
 	}
 
