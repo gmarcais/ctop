@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"runtime"
 	"strings"
 
+	"github.com/bcicen/ctop/builds"
 	"github.com/bcicen/ctop/config"
 	"github.com/bcicen/ctop/connector"
 	"github.com/bcicen/ctop/container"
@@ -22,12 +24,13 @@ var (
 	version   = "dev-build"
 	goVersion = runtime.Version()
 
-	log     *logging.CTopLogger
-	cursor  *GridCursor
-	cGrid   *compact.CompactGrid
-	header  *widgets.CTopHeader
-	status  *widgets.StatusLine
-	errView *widgets.ErrorView
+	log          *logging.CTopLogger
+	cursor       *GridCursor
+	cGrid        *compact.CompactGrid
+	header       *widgets.CTopHeader
+	status       *widgets.StatusLine
+	errView      *widgets.ErrorView
+	buildMonitor *builds.Monitor
 
 	versionStr = fmt.Sprintf("ctop version %v, build %v %v", version, build, goVersion)
 )
@@ -45,6 +48,7 @@ func main() {
 		reverseSortFlag = flag.Bool("r", false, "reverse container sort order")
 		invertFlag      = flag.Bool("i", false, "invert default colors")
 		connectorFlag   = flag.String("connector", "docker", "container connector to use")
+		buildsFlag      = flag.Bool("builds", true, "show active Docker builds (requires Docker Buildx)")
 	)
 	flag.Parse()
 
@@ -106,6 +110,12 @@ func main() {
 	header = widgets.NewCTopHeader()
 	status = widgets.NewStatusLine()
 	errView = widgets.NewErrorView()
+	if *connectorFlag == "docker" && *buildsFlag {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		buildMonitor = builds.NewMonitor()
+		go buildMonitor.Run(ctx)
+	}
 
 	for {
 		exit := Display()
